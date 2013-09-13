@@ -20,6 +20,13 @@ struct _PtpSimulatorToolbar {
     GtkToolItem        *item_open;
     GtkToolItem        *item_save;
     GtkToolItem        *item_save_as;
+    
+    GtkToolItem        *item_add;
+    GtkToolItem        *item_remove;
+    
+    GtkToolItem        *item_play;
+    GtkToolItem        *item_pause;
+    GtkToolItem        *item_stop;
 };
 
 struct _PtpSimulatorToolbarClass {

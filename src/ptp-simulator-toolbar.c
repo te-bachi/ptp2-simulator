@@ -11,7 +11,7 @@
 
 
 #define ptp_simulator_toolbar_separator_new(toolbar) { \
-    GtkWidget *separator = gtk_separator_tool_item_new(void); \
+    GtkToolItem *separator = gtk_separator_tool_item_new(); \
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), separator, -1); \
     gtk_widget_show(GTK_WIDGET(separator)); \
 }
@@ -63,8 +63,8 @@ ptp_simulator_toolbar_new(GtkWidget *window)
     ptp_simulator_toolbar_item_new(toolbar, toolbar->item_save,     GTK_STOCK_SAVE,         "Save",        ptp_simulation_action_save,     window);
     ptp_simulator_toolbar_item_new(toolbar, toolbar->item_save_as,  GTK_STOCK_SAVE_AS,      "Save As...",  ptp_simulation_action_save_as,  window);
     ptp_simulator_toolbar_separator_new(toolbar);
-    ptp_simulator_toolbar_item_new(toolbar, toolbar->item_add,      GTK_STOCK_ADD,          "Add",         ptp_simulation_action_new,      window);
-    ptp_simulator_toolbar_item_new(toolbar, toolbar->item_remove,   GTK_STOCK_REMOVE,       "Remove",      ptp_simulation_action_open,     window);
+    ptp_simulator_toolbar_item_new(toolbar, toolbar->item_add,      GTK_STOCK_ADD,          "Add",         ptp_simulation_action_add,      window);
+    ptp_simulator_toolbar_item_new(toolbar, toolbar->item_remove,   GTK_STOCK_REMOVE,       "Remove",      ptp_simulation_action_remove,   window);
     ptp_simulator_toolbar_separator_new(toolbar);
     ptp_simulator_toolbar_item_new(toolbar, toolbar->item_play,     GTK_STOCK_MEDIA_PLAY,   "Play",        ptp_simulation_action_play,     window);
     ptp_simulator_toolbar_item_new(toolbar, toolbar->item_pause,    GTK_STOCK_MEDIA_PAUSE,  "Pause",       ptp_simulation_action_pause,    window);
