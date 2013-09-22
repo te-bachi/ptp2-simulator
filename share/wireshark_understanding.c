@@ -17,7 +17,27 @@ static void create_main_window (gint pl_size, gint tv_size, gint bv_size, e_pref
 {
     
     [...]
-    
+    /* Main window */
+    top_level = window_new(GTK_WINDOW_TOPLEVEL, "");
+    set_titlebar_for_capture_file(NULL);
+
+    gtk_widget_set_name(top_level, "main window");
+    g_signal_connect(top_level, "delete_event", G_CALLBACK(main_window_delete_event_cb), NULL);
+    g_signal_connect(G_OBJECT(top_level), "window_state_event", G_CALLBACK(window_state_event_cb), NULL);
+    g_signal_connect(G_OBJECT(top_level), "key-press-event", G_CALLBACK(top_level_key_pressed_cb), NULL );
+
+    /* Vertical container for menu bar, toolbar(s), paned windows and progress/info box */
+    main_vbox = ws_gtk_box_new(GTK_ORIENTATION_VERTICAL, 1, FALSE);
+
+	gtk_container_set_border_width(GTK_CONTAINER(main_vbox), 0);
+    gtk_container_add(GTK_CONTAINER(top_level), main_vbox);
+    gtk_widget_show(main_vbox);
+
+    /* Menu bar */
+    menubar = main_menu_new(&accel);
+    gtk_window_add_accel_group(GTK_WINDOW(top_level), accel);
+    gtk_widget_show(menubar);
+
     /* Main Toolbar */
     main_tb = toolbar_new();
     gtk_widget_show (main_tb);
@@ -35,10 +55,8 @@ static void create_main_window (gint pl_size, gint tv_size, gint bv_size, e_pref
     gtk_widget_set_size_request(tv_scrollw, -1, tv_size);
     gtk_widget_show(tv_scrollw);
     
-    g_signal_connect(gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_view_gbl)),
-                   "changed", G_CALLBACK(tree_view_selection_changed_cb), NULL);
-    g_signal_connect(tree_view_gbl, "button_press_event", G_CALLBACK(popup_menu_handler),
-                   g_object_get_data(G_OBJECT(popup_menu_object), PM_TREE_VIEW_KEY));
+    g_signal_connect(gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_view_gbl)), "changed", G_CALLBACK(tree_view_selection_changed_cb), NULL);
+    g_signal_connect(tree_view_gbl, "button_press_event", G_CALLBACK(popup_menu_handler), g_object_get_data(G_OBJECT(popup_menu_object), PM_TREE_VIEW_KEY));
     gtk_widget_show(tree_view_gbl);
     
     /* Byte view. */
@@ -46,14 +64,90 @@ static void create_main_window (gint pl_size, gint tv_size, gint bv_size, e_pref
     gtk_widget_set_size_request(byte_nb_ptr_gbl, -1, bv_size);
     gtk_widget_show(byte_nb_ptr_gbl);
     
-    g_signal_connect(byte_nb_ptr_gbl, "button_press_event", G_CALLBACK(popup_menu_handler),
-                   g_object_get_data(G_OBJECT(popup_menu_object), PM_BYTES_VIEW_KEY));
+    g_signal_connect(byte_nb_ptr_gbl, "button_press_event", G_CALLBACK(popup_menu_handler), g_object_get_data(G_OBJECT(popup_menu_object), PM_BYTES_VIEW_KEY));
+    
+    /* Panes for the packet list, tree, and byte view */
+    main_pane_v1 = gtk_paned_new(GTK_ORIENTATION_VERTICAL);
+    gtk_widget_show(main_pane_v1);
+    main_pane_v2 = gtk_paned_new(GTK_ORIENTATION_VERTICAL);
+    gtk_widget_show(main_pane_v2);
+    main_pane_h1 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_widget_show(main_pane_h1);
+    main_pane_h2 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_widget_show(main_pane_h2);
     
     [...]
     
 }
 
-
+/*
+ * Rearrange the main window widgets
+ */
+void main_widgets_rearrange(void) {
+    
+    [...]
+    
+    /* fill the main layout panes */
+    switch(prefs.gui_layout_type) {
+        case(layout_type_5):
+            main_first_pane  = main_pane_v1;
+            main_second_pane = main_pane_v2;
+            split_top_left = FALSE;
+            break;
+        case(layout_type_2):
+            main_first_pane  = main_pane_v1;
+            main_second_pane = main_pane_h1;
+            split_top_left = FALSE;
+            break;
+        case(layout_type_1):
+            main_first_pane  = main_pane_v1;
+            main_second_pane = main_pane_h1;
+            split_top_left = TRUE;
+            break;
+        case(layout_type_4):
+            main_first_pane  = main_pane_h1;
+            main_second_pane = main_pane_v1;
+            split_top_left = FALSE;
+            break;
+        case(layout_type_3):
+            main_first_pane  = main_pane_h1;
+            main_second_pane = main_pane_v1;
+            split_top_left = TRUE;
+            break;
+        case(layout_type_6):
+            main_first_pane  = main_pane_h1;
+            main_second_pane = main_pane_h2;
+            split_top_left = FALSE;
+            break;
+        default:
+            main_first_pane = NULL;
+            main_second_pane = NULL;
+            g_assert_not_reached();
+    }
+    
+    if (split_top_left) {
+        first_pane_widget1 = main_second_pane;
+        second_pane_widget1 = main_widget_layout(prefs.gui_layout_content_1);
+        second_pane_widget2 = main_widget_layout(prefs.gui_layout_content_2);
+        first_pane_widget2 = main_widget_layout(prefs.gui_layout_content_3);
+    } else {
+        first_pane_widget1 = main_widget_layout(prefs.gui_layout_content_1);
+        first_pane_widget2 = main_second_pane;
+        second_pane_widget1 = main_widget_layout(prefs.gui_layout_content_2);
+        second_pane_widget2 = main_widget_layout(prefs.gui_layout_content_3);
+    }
+    if (first_pane_widget1 != NULL)
+        gtk_paned_add1(GTK_PANED(main_first_pane), first_pane_widget1);
+    if (first_pane_widget2 != NULL)
+        gtk_paned_add2(GTK_PANED(main_first_pane), first_pane_widget2);
+    if (second_pane_widget1 != NULL)
+        gtk_paned_pack1(GTK_PANED(main_second_pane), second_pane_widget1, TRUE, TRUE);
+    if (second_pane_widget2 != NULL)
+        gtk_paned_pack2(GTK_PANED(main_second_pane), second_pane_widget2, FALSE, FALSE);
+    
+    [...]
+    
+}
 
 
 /****************************************************************************
@@ -77,6 +171,31 @@ static const GtkRadioActionEntry bytes_menu_radio_action_entries [] =
     /* name,    stock id,        label,      accel,  tooltip,  value */
     { "/HexView",   NULL,       "Hex View",   NULL,   NULL,     BYTES_HEX },
     { "/BitsView",  NULL,       "Bits View",  NULL,   NULL,     BYTES_BITS },
+};
+
+static const char *ui_desc_menubar =
+"<ui>\n"
+"  <menubar name ='Menubar'>\n"
+"    <menu name= 'FileMenu' action='/File'>\n"
+"      <menuitem name='Open' action='/File/Open'/>\n"
+"      <menu name='OpenRecent' action='/File/OpenRecent'>\n"
+
+       [...]
+       
+"      <separator/>\n"
+"      <menuitem name='AboutWireshark' action='/Help/AboutWireshark'/>\n"
+"    </menu>\n"
+"  </menubar>\n"
+"</ui>\n";
+
+static const GtkActionEntry main_menu_bar_entries[] = {
+  /* Top level */
+  { "/File",                    NULL,                              "_File",              NULL,                   NULL,           NULL },
+  { "/Edit",                    NULL,                              "_Edit",              NULL,                   NULL,           NULL },
+  
+  [...]
+  
+  { "/View/TimeDisplayFormat/FileFormatPrecision-Nanoseconds",    NULL, "Nanoseconds:   0.123456789",         NULL, NULL, TS_PREC_FIXED_NSEC },
 };
 
 GtkWidget *

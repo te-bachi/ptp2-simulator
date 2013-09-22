@@ -24,6 +24,12 @@ ptp_simulation_action_save_as(GtkWidget *widget, gpointer data)
     printf("Save As\n");
 }
 
+void
+ptp_simulation_action_quit(GtkWidget *widget, gpointer data)
+{
+    
+}
+
 void 
 ptp_simulation_action_add(GtkWidget *widget, gpointer data)
 {

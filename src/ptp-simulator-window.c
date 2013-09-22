@@ -10,6 +10,8 @@ G_DEFINE_TYPE(PtpSimulatorWindow, ptp_simulator_window, GTK_TYPE_WINDOW);
 static void ptp_simulator_window_finalize(GObject* obj);
     
 static gboolean ptp_simulator_window_delete_event_cb(GtkWidget *, GdkEvent *, gpointer);
+static void ptp_simulator_window_paned_one_position(GtkWidget *widget, gpointer data);
+static void ptp_simulator_window_paned_two_position(GtkWidget *widget, gpointer data);
 
 /****************************************************************************
  * GObject definitions
@@ -54,6 +56,7 @@ ptp_simulator_window_new(void) {
     
     /* vbox */
     window->vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    g_object_ref(window->vbox);
     gtk_container_add(GTK_CONTAINER(window), window->vbox);
     
     /* ui manager */
@@ -62,6 +65,7 @@ ptp_simulator_window_new(void) {
     
     /* menubar */
     window->menubar = ptp_simulator_ui_manager_get_menubar(window->ui_manager);
+    g_object_ref(window->menubar);
     gtk_box_pack_start(GTK_BOX(window->vbox), window->menubar, FALSE, FALSE, 0); /* vbox <= menubar */
     
     /* toolbar */
@@ -80,15 +84,17 @@ ptp_simulator_window_new(void) {
       ||_______..._______||
       ||                 ||
       ||   paned_two2    ||
-      ||_______..._______||
+      ||_________________||
       |___________________| */
     
     /* paned one */
     window->paned_one = gtk_paned_new(GTK_ORIENTATION_VERTICAL);
+    g_signal_connect(window->paned_one, "notify::position", G_CALLBACK(ptp_simulator_window_paned_one_position), NULL);
     gtk_box_pack_start(GTK_BOX(window->vbox), window->paned_one, TRUE, TRUE, 0); /* vbox <= paned one */
     
     /* paned two */
     window->paned_two = gtk_paned_new(GTK_ORIENTATION_VERTICAL);
+    g_signal_connect(window->paned_two , "notify::position", G_CALLBACK(ptp_simulator_window_paned_two_position), NULL);
     gtk_paned_pack2(GTK_PANED(window->paned_one), window->paned_two, TRUE, FALSE); /* paned one2 <= paned two */
     
     /* packet list */
@@ -98,7 +104,21 @@ ptp_simulator_window_new(void) {
     window->packet_list             = ptp_simulator_packet_list_new();
     gtk_container_add(GTK_CONTAINER(window->packet_list_viewport), window->packet_list);
     gtk_container_add(GTK_CONTAINER(window->packet_list_win), window->packet_list_viewport);
-    gtk_paned_pack1(GTK_PANED(window->paned_one), window->packet_list_win, TRUE, FALSE); /* paned one1 <= packet list */
+    gtk_paned_pack1(GTK_PANED(window->paned_one), window->packet_list_win, /* resize = */ TRUE, /* shrink = */ TRUE); /* paned one1 <= packet list */
+    
+    GtkRequisition min;
+    GtkRequisition natural;
+    g_object_set(window->packet_list_win, "expand", FALSE, NULL);
+    gtk_widget_set_size_request(window->packet_list_win, -1, 1);
+    gtk_widget_get_preferred_size(window->packet_list_win, &min, &natural);
+    printf("packet_list_win min=%dx%d natural=%dx%d\n", min.width, min.height, natural.width, natural.height);
+    
+    /*
+    gboolean shrink;
+    gtk_container_child_get(GTK_CONTAINER(window->paned_one), window->packet_list_win, "shrink", &shrink, NULL);
+    printf("packet_list_win shrink = %s\n", shrink ? "true" : "false");
+    gtk_container_child_set(GTK_CONTAINER(window->paned_one), window->packet_list_win, "shrink", TRUE, NULL);
+    */
     
     /* packet detail */
     window->packet_detail_win       = gtk_scrolled_window_new(NULL, NULL);
@@ -131,10 +151,26 @@ ptp_simulator_window_new(void) {
 /****************************************************************************
  * Callbacks
  ***************************************************************************/
- 
+
 static gboolean
 ptp_simulator_window_delete_event_cb(GtkWidget *widget, GdkEvent *event, gpointer data) {
     
     return FALSE;
+}
+
+static void
+ptp_simulator_window_paned_one_position(GtkWidget *widget, gpointer data) {
+    gint pos;
+    
+    pos = gtk_paned_get_position(GTK_PANED(widget));
+    printf("[ONE] %d\n", pos);
+}
+
+static void
+ptp_simulator_window_paned_two_position(GtkWidget *widget, gpointer data) {
+    gint pos;
+    
+    pos = gtk_paned_get_position(GTK_PANED(widget));
+    printf("[TWO] %d\n", pos);
 }
 
